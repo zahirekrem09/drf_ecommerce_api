@@ -49,11 +49,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         super().save(*args, **kwargs)
 
 
-# class ImageUpload(models.Model):
-#     image = models.ImageField(upload_to="images")
+class ImageUpload(models.Model):
+    image = models.ImageField(upload_to="images")
 
-#     def __str__(self):
-#         return str(self.image)
+    def __str__(self):
+        return str(self.image)
 
 
 # class UserProfile(models.Model):
@@ -63,7 +63,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 #         ImageUpload, related_name="user_images", on_delete=models.SET_NULL, null=True)
 #     dob = models.DateField()
 #     phone = models.PositiveIntegerField()
-#     country_code = models.CharField(default="+234", max_length=5)
+#     country_code = models.CharField(default="+123", max_length=5)
 #     created_at = models.DateTimeField(auto_now_add=True)
 #     updated_at = models.DateTimeField(auto_now=True)
 
