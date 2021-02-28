@@ -4,6 +4,7 @@ from graphene_django import DjangoObjectType
 from django.contrib.auth import authenticate
 from ecommerce_api.authentication import TokenManager
 from datetime import datetime
+from ecommerce_api.permissions import is_authenticated, paginate
 
 
 class UserType(DjangoObjectType):
@@ -81,10 +82,12 @@ class GetAccess(graphene.Mutation):
 
 
 class Query(graphene.ObjectType):
-    users = graphene.List(UserType)
+    users = graphene.Field(paginate(UserType),  page=graphene.Int())
 
+    # @is_authenticated
     def resolve_users(self, info, **kwargs):
-        return CustomUser.objects.all()
+        # print(info.context.user)
+        return CustomUser.objects.filter(**kwargs)
 
 
 class Mutation(graphene.ObjectType):
