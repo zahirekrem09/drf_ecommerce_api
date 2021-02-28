@@ -42,9 +42,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # 3 party app
     'graphene_django',
-    'corsheaders'
+    'corsheaders',
     # my app
+    'user_controller',
 ]
+
+AUTH_USER_MODEL = "user_controller.CustomUser"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
