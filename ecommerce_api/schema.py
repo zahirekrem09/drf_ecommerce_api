@@ -8,7 +8,7 @@ class Query(user_schema.Query, graphene.ObjectType):
     pass
 
 
-class Mutation(graphene.ObjectType):
+class Mutation(user_schema.Mutation, graphene.ObjectType):
     pass
 
 
