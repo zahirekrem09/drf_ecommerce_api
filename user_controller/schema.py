@@ -14,7 +14,7 @@ class UserType(DjangoObjectType):
 class RegisterUser(graphene.Mutation):
     status = graphene.Boolean()
     message = graphene.String()
-    # user = graphene.Field(UserType)
+    user = graphene.Field(UserType)
 
     class Arguments:
         email = graphene.String(required=True)
@@ -27,8 +27,8 @@ class RegisterUser(graphene.Mutation):
 
         return RegisterUser(
             status=True,
-            message="User created successfully"
-            # user=user,
+            message="User created successfully",
+            user=user,
 
         )
 
@@ -46,7 +46,7 @@ class LoginUser(graphene.Mutation):
         user = authenticate(username=email, password=password)
 
         if not user:
-            raise Exception("invalid credentials")
+            raise Exception("invalid credentials email or password is wrong")
 
         user.last_login = datetime.now()
         user.save()
@@ -61,6 +61,25 @@ class LoginUser(graphene.Mutation):
         )
 
 
+class GetAccess(graphene.Mutation):
+    access = graphene.String()
+
+    class Arguments:
+        refresh = graphene.String(required=True)
+
+    def mutate(self, info, refresh):
+        token = TokenManager.decode_token(refresh)
+
+        if not token or token["type"] != "refresh":
+            raise Exception("Invalid token or has expired")
+
+        access = TokenManager.get_access({"user_id": token["user_id"]})
+
+        return GetAccess(
+            access=access
+        )
+
+
 class Query(graphene.ObjectType):
     users = graphene.List(UserType)
 
@@ -71,6 +90,7 @@ class Query(graphene.ObjectType):
 class Mutation(graphene.ObjectType):
     register_user = RegisterUser.Field()
     login_user = LoginUser.Field()
+    get_access = GetAccess.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
