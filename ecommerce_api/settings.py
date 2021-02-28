@@ -185,3 +185,13 @@ CORS_ALLOW_HEADERS = (
 )
 CORS_ALLOW_CREDENTIALS = False
 CORS_ALLOW_METHODS = ('GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS')
+
+
+GRAPHENE = {
+    'SCHEMA': 'ecommerce_api.schema.schema',
+    'MIDDLEWARE': [
+        'ecommerce_api.middlewares.CustomAuthMiddleware',
+        # 'ecommerce_api.middlewares.CustomPaginationMiddleware'
+    ],
+    # 'PAGE_SIZE': 20
+}
