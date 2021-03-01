@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'corsheaders',
     # my app
     'user_controller',
+    'product_controller',
 ]
 
 AUTH_USER_MODEL = "user_controller.CustomUser"
