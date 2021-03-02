@@ -271,7 +271,7 @@ class DeleteProduct(graphene.Mutation):
 
         return DeleteProduct(
             status=True,
-            product_idmessage="Product deleted operetions successfully",
+            message="Product deleted operetions successfully",
         )
 
 
@@ -370,6 +370,86 @@ class HandleWishList(graphene.Mutation):
         return HandleWishList(status=True)
 
 
+class CreateCartItem(graphene.Mutation):
+    cart_item = graphene.Field(CartType)
+
+    class Arguments:
+        product_id = graphene.ID(required=True)
+        quantity = graphene.Int()
+
+    @is_authenticated
+    def mutate(self, info, product_id, **kwargs):
+        Cart.objects.filter(product_id=product_id,
+                            user_id=info.context.user.id).delete()
+
+        cart_item = Cart.objects.create(
+            product_id=product_id, user_id=info.context.user.id, **kwargs)
+
+        return CreateCartItem(
+            cart_item=cart_item
+        )
+
+
+class UpdateCartItem(graphene.Mutation):
+    cart_item = graphene.Field(CartType)
+
+    class Arguments:
+        cart_id = graphene.ID(required=True)
+        quantity = graphene.Int(required=True)
+
+    @is_authenticated
+    def mutate(self, info, cart_id, **kwargs):
+        Cart.objects.filter(
+            id=cart_id, user_id=info.context.user.id).update(**kwargs)
+
+        return UpdateCartItem(
+            cart_item=Cart.objects.get(id=cart_id)
+        )
+
+
+class DeleteCartItem(graphene.Mutation):
+    status = graphene.Boolean()
+    message = graphene.String()
+
+    class Arguments:
+        cart_id = graphene.ID(required=True)
+
+    @is_authenticated
+    def mutate(self, info, cart_id):
+        Cart.objects.filter(id=cart_id, user_id=info.context.user.id).delete()
+
+        return DeleteCartItem(
+            status=True,
+            message="Cart Item deleted operetions successfully",
+        )
+
+
+class CompletePayment(graphene.Mutation):
+    status = graphene.Boolean()
+    message = graphene.String()
+
+    @is_authenticated
+    def mutate(self, info):
+        user_carts = Cart.objects.filter(user_id=info.context.user.id)
+
+        RequestCart.objects.bulk_create([
+            RequestCart(
+                user_id=info.context.user.id,
+                business_id=cart_item.product.business.id,
+                product_id=cart_item.product.id,
+                quantity=cart_item.quantity,
+                price=cart_item.quantity * cart_item.product.price
+            ) for cart_item in user_carts
+        ])
+
+        user_carts.delete()
+
+        return CompletePayment(
+            status=True,
+            message="Payment operetions successfully",
+        )
+
+
 class Mutation(graphene.ObjectType):
     create_business = CreateBusiness.Field()
     update_business = UpdateBusiness.Field()
@@ -380,6 +460,10 @@ class Mutation(graphene.ObjectType):
     update_product_image = UpdateProductImage.Field()
     create_product_comment = CreateProductComment.Field()
     handle_wish_list = HandleWishList.Field()
+    create_cart_item = CreateCartItem.Field()
+    update_cart_item = UpdateCartItem.Field()
+    delete_cart_item = DeleteCartItem.Field()
+    complete_payment = CompletePayment.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
