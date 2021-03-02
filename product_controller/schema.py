@@ -259,6 +259,7 @@ class UpdateProduct(graphene.Mutation):
 
 class DeleteProduct(graphene.Mutation):
     status = graphene.Boolean()
+    message = graphene.String()
 
     class Arguments:
         product_id = graphene.ID(required=True)
@@ -269,7 +270,8 @@ class DeleteProduct(graphene.Mutation):
             id=product_id, business_id=info.context.user.user_business.id).delete()
 
         return DeleteProduct(
-            status=True
+            status=True,
+            product_idmessage="Product deleted operetions successfully",
         )
 
 
@@ -302,6 +304,72 @@ class UpdateProductImage(graphene.Mutation):
         )
 
 
+class CreateProductComment(graphene.Mutation):
+    product_comment = graphene.Field(ProductCommentType)
+
+    class Arguments:
+        product_id = graphene.ID(required=True)
+        comment = graphene.String(required=True)
+        rate = graphene.Int()
+
+    @is_authenticated
+    def mutate(self, info, product_id, **kwargs):
+        user_buss_id = None
+        try:
+            user_buss_id = info.context.user.user_business.id
+        except Exception:
+            pass
+
+        if user_buss_id:
+            own_product = Product.objects.filter(
+                business_id=user_buss_id, id=product_id)
+            if own_product:
+                raise Exception("You cannot comment on you product")
+
+        ProductComment.objects.filter(
+            user=info.context.user.id, product_id=product_id).delete()
+
+        p_comment = ProductComment.objects.create(
+            product_id=product_id, **kwargs)
+
+        return CreateProduct(
+            product_comment=p_comment
+        )
+
+
+class HandleWishList(graphene.Mutation):
+    status = graphene.Boolean()
+
+    class Arguments:
+        product_id = graphene.ID(required=True)
+        is_check = graphene.Boolean()
+
+    @is_authenticated
+    def mutate(self, info, product_id, is_check=False):
+        try:
+            product = Product.objects.get(id=product_id)
+        except Exception:
+            raise Exception("Product with product_id does not exist")
+
+        try:
+            user_wish = info.context.user.user_wish
+        except Exception:
+            user_wish = Wish.objects.create(user_id=info.context.user.id)
+
+        has_product = user_wish.products.filter(id=product_id)
+
+        if has_product:
+            if is_check:
+                return HandleWishList(status=True)
+            user_wish.products.remove(product)
+        else:
+            if is_check:
+                return HandleWishList(status=False)
+            user_wish.products.add(product)
+
+        return HandleWishList(status=True)
+
+
 class Mutation(graphene.ObjectType):
     create_business = CreateBusiness.Field()
     update_business = UpdateBusiness.Field()
@@ -310,6 +378,8 @@ class Mutation(graphene.ObjectType):
     update_product = UpdateProduct.Field()
     delete_product = DeleteProduct.Field()
     update_product_image = UpdateProductImage.Field()
+    create_product_comment = CreateProductComment.Field()
+    handle_wish_list = HandleWishList.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
