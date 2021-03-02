@@ -66,6 +66,7 @@ class Query(graphene.ObjectType):
     products = graphene.Field(paginate(ProductType), search=graphene.String(),
                               min_price=graphene.Float(), max_price=graphene.Float(), category=graphene.String(),
                               business=graphene.String(), sort_by=graphene.String(), is_asc=graphene.Boolean(), mine=graphene.Boolean())
+    product = graphene.Field(ProductType, id=graphene.ID(required=True))
 
     def resolve_categories(self, info, name=False):
         query = Category.objects.prefetch_related("product_categories")
@@ -122,3 +123,61 @@ class Query(graphene.ObjectType):
             query = query.order_by(qs)
 
         return query
+
+    def resolve_product(self, info, id):
+        query = Product.objects.select_related("category", "business").prefetch_related(
+            "product_images", "product_comments", "products_wished", "product_carts", "product_requests"
+        ).get(id=id)
+
+        return query
+
+
+class CreateBusiness(graphene.Mutation):
+    business = graphene.Field(BusinessType)
+
+    class Arguments:
+        name = graphene.String(required=True)
+
+    @is_authenticated
+    def mutate(self, info, name):
+        buss = Business.objects.create(name=name, user_id=info.context.user.id)
+
+        return CreateBusiness(
+            business=buss
+        )
+
+
+class UpdateBusiness(graphene.Mutation):
+    business = graphene.Field(BusinessType)
+
+    class Arguments:
+        name = graphene.String(required=True)
+
+    @is_authenticated
+    def mutate(self, info, name):
+        try:
+            instance = info.context.user.user_business
+        except Exception:
+            raise Exception("You does not have a business to update")
+
+        instance.name = name
+        instance.save()
+
+        return UpdateBusiness(
+            business=instance
+        )
+
+
+class DeleteBusiness(graphene.Mutation):
+    status = graphene.Boolean()
+
+    @is_authenticated
+    def mutate(self, info):
+        Business.objects.filter(user_id=info.context.user.id).delete()
+
+        return DeleteBusiness(
+            status=True
+        )
+
+
+schema = graphene.Schema(query=Query)

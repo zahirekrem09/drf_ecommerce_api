@@ -194,5 +194,5 @@ GRAPHENE = {
         'ecommerce_api.middlewares.CustomAuthMiddleware',
         'ecommerce_api.middlewares.CustomPaginationMiddleware'
     ],
-    'PAGE_SIZE': 1
+    'PAGE_SIZE': 10
 }
